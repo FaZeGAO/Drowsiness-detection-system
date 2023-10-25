@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:latest
+    container_name: redisOnline
+    ports:
+      - "6379:6379"
+    networks:
+      redis-network:
+        ipv4_address: 172.16.0.4
+
+  predictor: 
+    image: predictor:latest
+    container_name: predictorOnline
+    ports:
+      - "80:80"  
+    volumes:
+      - /home/sersch/artefactos/predictor/code:/code
+      - /home/sersch/artefactos/predictor/artefactos:/artefacts
+    
+    networks:
+      - redis-network
+
+  alarma:
+      image: alarma
+      container_name: alarmaOnline
+      privileged: true
+      environment:
+        - DISPLAY=${DISPLAY:-:0.0}
+      ports:
+      - "8080:80"  
+      volumes:
+        - /tmp/.X11-unix:/tmp/.X11-unix
+        - /home/sersch/artefactos/tts/code:/app
+
+  telefono:
+      image: numero2
+      container_name: numeroOnline
+      privileged: true
+      volumes:
+        - /home/sersch/artefactos/numerobt/code:/code
+        - /var/run/dbus/:/var/run/dbus/:z
+        - /etc/systemd/system/dbus-org.bluez.service:/etc/systemd/system/dbus-org.bluez.service
+     
+      network_mode: host
+      #networks:
+       # - redis-network
+
+  llamada:
+      image: llamada
+      container_name: llamadaOnline
+      volumes:
+        - /home/sersch/artefactos/llamada/code:/code
+      networks:
+      - redis-network
+
+
+
+networks:
+    redis-network: 
+        ipam:
+          config:
+            - subnet: 172.16.0.0/24
